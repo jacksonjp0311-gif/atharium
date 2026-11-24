@@ -60,6 +60,9 @@ Authorize is never automatic. Durable accepts stay candidate until human authori
 # local wake (same code the runner uses)
 python -m colony.evolve --cycles 3
 python -m colony.evolve --status
+
+# optional gated live attempt (fails closed to fixtures)
+python -m colony.evolve --cycles 1 --live --offline false
 ```
 
 ---
@@ -89,7 +92,7 @@ These rules are load-bearing. Mutations cannot rewrite them.
 ```
 bench     hard checks + verifier
 measure   current knobs on a fixed seed set (claim map)
-propose   one closed-set mutation (escalation cap, single-source penalty, priority boost)
+propose   one closed-set mutation (escalation cap, single-source penalty, priority boost, gap boost)
 trial     re-measure under the mutation
 twin      frozen control arm, no mutation
 oracle    kill if coverage drops, false-positive rises, residual risk hidden, or cost explodes
@@ -97,7 +100,7 @@ keep      only if trial > baseline AND twin does not lead AND oracle does not ki
 witness   append-only record of keep / revert / void
 ```
 
-Knobs live in `colony/knobs.py`. Measurement is `colony/measure.py`. Verifier is `colony/verifier.py` (sha256, fails closed). Oracle is `colony/oracle.py`. The evolve driver is `colony/evolve.py`. Outcomes accumulate in `data/evolve_state.json` and are summarized in `society/LEARNING.md`.
+Knobs live in `colony/knobs.py`. Measurement is `colony/measure.py` (richer seed with gaps + disagreement; gated live stub fails closed). Verifier is `colony/verifier.py` (sha256, fails closed). Oracle is `colony/oracle.py`. The evolve driver is `colony/evolve.py`. Outcomes accumulate in `data/evolve_state.json` and are summarized in `society/LEARNING.md`. Cross-surface notes in `society/LESSONS.md`.
 
 A keep is a candidate until human authorize. Standing trust may selectively accept machine-checked keeps that improve coverage or residual risk without raising false-positive rate. Never accept-all.
 
@@ -119,16 +122,16 @@ python -m colony.evolve --status
 python -m pytest tests/test_verifier.py -q
 ```
 
-Offline, no wallet, no network required. Measurement runs against the claim map on a fixed seed set of companies.
+Offline by default. Gated live path is optional and fails closed to fixtures if unavailable.
 
 ---
 
 ## Layout
 
 ```
-colony/intents.py                claim registry (Athar geometry)
+colony/intents.py                claim registry (Athar geometry) + richer seed
 colony/cluster.py                cluster map (settled / contested / single / blind / dead)
-colony/measure.py                seed-set measurement for keep/revert
+colony/measure.py                seed-set measurement (offline + gated live stub)
 colony/verifier.py               independent sha256 gate (fails closed)
 colony/oracle.py                 machine-checkable kill rules
 colony/knobs.py                  closed set of safe mutable parameters
@@ -136,6 +139,7 @@ colony/evolve.py                 sleep/awake cycle driver, twin + Oracle, keep/r
 colony/__init__.py
 CHARTER.md                       hard ceiling
 society/LEARNING.md              recursive outcomes surface
+society/LESSONS.md               cross-surface notes
 society/EVOLVE_STATUS.md         slim receipt from runner
 data/evolve_state.json           append-only state
 .github/workflows/atharium-evolve.yml   scheduled runner
@@ -159,7 +163,7 @@ Everything else is free for emergence under measurement.
 
 ## Status
 
-Operational. Sleep/awake runner is scheduled. Recursive learning loop measures the claim map on a fixed seed set, proposes closed-set mutations, and records keeps and reverts under twin control + Oracle kill rules. Independent verifier recomputes sha256 and fails closed on tamper. Real Telegraph live scouts are optional and gated; the offline path is complete. Not AGI. Not a production credit system. A measured hybrid that any agent can wake.
+Operational. Sleep/awake runner is scheduled. Recursive learning loop measures the claim map on a richer seed set (gaps + disagreement), proposes closed-set mutations (including gap escalation boost), and records keeps and reverts under twin control + calibrated Oracle. Independent verifier recomputes sha256 and fails closed on tamper. Gated live scout path is stubbed and fails closed to fixtures. Cross-surface notes in society/LESSONS.md. Not AGI. Not a production credit system. A measured hybrid that any agent can wake.
 
 ---
 
