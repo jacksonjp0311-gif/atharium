@@ -40,7 +40,10 @@ CLAIMS: tuple[Claim, ...] = (
 
 BY_ID = {c.id: c for c in CLAIMS}
 
+# Richer seed set: clean, contested, and load-bearing gap cases.
 SEED_COMPANIES = (
     Inputs(company="A.P. Moller-Maersk A/S", domain="maersk.com"),
     Inputs(company="Example Corp", domain="example.com", jurisdiction="US"),
+    Inputs(company="Gap Co", domain="gap.example", jurisdiction="US"),  # will simulate load-bearing gap
+    Inputs(company="Contested Ltd", domain="contested.example"),       # will simulate disagreement
 )
