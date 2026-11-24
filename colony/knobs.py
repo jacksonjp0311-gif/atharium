@@ -16,6 +16,7 @@ KNOBS: dict[str, Knob] = {
     "escalation_max_claims": Knob("escalation_max_claims", 2, 0, 4, "Max claims that may receive extra scouts."),
     "single_source_penalty": Knob("single_source_penalty", 1, 0, 2, "Treatment of single-sourced load-bearing claims."),
     "coverage_priority_boost": Knob("coverage_priority_boost", 0, -10, 10, "Priority boost for load-bearing claims."),
+    "gap_escalation_boost": Knob("gap_escalation_boost", 0, 0, 2, "Extra escalation weight on known load-bearing gaps."),
 }
 
 def get_knob(name: str, overrides: dict[str, Any] | None = None) -> Any:
