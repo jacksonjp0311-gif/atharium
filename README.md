@@ -1,7 +1,5 @@
 <div align="center">
 
-![Atharium](docs/atharium-banner.svg)
-
 # Atharium
 
 **Claim map under measurement.**
