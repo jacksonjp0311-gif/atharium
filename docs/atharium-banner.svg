@@ -1,26 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600">
   <rect width="1200" height="600" fill="#1a1c1a"/>
-  <rect x="40" y="40" width="1120" height="520" fill="none" stroke="#eeeee6" stroke-width="1.5"/>
-  <text x="600" y="140" font-family="serif" font-size="72" fill="#eeeee6" text-anchor="middle" letter-spacing="8">ATHARIUM</text>
-  <text x="600" y="180" font-family="sans-serif" font-size="18" fill="#b7c4b6" text-anchor="middle" letter-spacing="4">CLAIM MAP UNDER MEASUREMENT</text>
-  <g stroke="#b7c4b6" fill="none" stroke-width="1">
-    <circle cx="600" cy="340" r="40"/>
-    <circle cx="480" cy="260" r="28"/>
-    <circle cx="720" cy="260" r="28"/>
-    <circle cx="420" cy="380" r="28"/>
-    <circle cx="780" cy="380" r="28"/>
-    <circle cx="520" cy="460" r="28"/>
-    <circle cx="680" cy="460" r="28"/>
-    <line x1="600" y1="300" x2="480" y2="260"/>
-    <line x1="600" y1="300" x2="720" y2="260"/>
-    <line x1="600" y1="380" x2="420" y2="380"/>
-    <line x1="600" y1="380" x2="780" y2="380"/>
-    <line x1="600" y1="380" x2="520" y2="460"/>
-    <line x1="600" y1="380" x2="680" y2="460"/>
-  </g>
-  <line x1="600" y1="340" x2="820" y2="220" stroke="#b7c4b6" stroke-width="3"/>
-  <circle cx="600" cy="340" r="6" fill="#b7c4b6"/>
-  <text x="600" y="348" font-family="serif" font-size="20" fill="#1a1c1a" text-anchor="middle">A</text>
-  <text x="80" y="540" font-family="sans-serif" font-size="12" fill="#eeeee6">EVOLVING SYSTEMS</text>
-  <text x="1120" y="540" font-family="sans-serif" font-size="12" fill="#eeeee6" text-anchor="end">SERIES α · 7</text>
+  <text x="600" y="300" font-family="serif" font-size="48" fill="#eeeee6" text-anchor="middle">ATHARIUM</text>
+  <text x="600" y="350" font-family="sans-serif" font-size="18" fill="#b7c4b6" text-anchor="middle">CLAIM MAP UNDER MEASUREMENT</text>
+  <text x="600" y="400" font-family="sans-serif" font-size="14" fill="#eeeee6" text-anchor="middle">laboratory instrument graphic pending commit</text>
 </svg>
