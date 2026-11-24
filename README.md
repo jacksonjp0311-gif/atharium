@@ -20,7 +20,7 @@ Atharium is a Frankenstein baby with a hard ceiling.
 
 It keeps the geometry that made Athar's Colony honest: a question is decomposed into fixed claims, scouts return facts not opinions, the queen reads only the cluster map, disagreement is shown rather than averaged, and a missing load-bearing claim returns HOLD. Every fact carries a receipt. An independent verifier recomputes the bundle hash and fails closed on tamper. That surface is load-bearing. It is not free for silent change.
 
-On top of that geometry sits a cyclic runner that sleeps and wakes like Agent Colony. On a schedule it measures the current knobs against the claim map on a fixed seed set, proposes one safe mutation from a closed set, re-measures, and keeps the change only when the trial window is strictly better *and* a frozen twin control does not lead *and* the Oracle does not kill. Fitness alone never decides. Human authorize remains required for durable accepts, new claims, or permanent rule changes. The independent verifier stays outside the mutation set.
+On top of that geometry sits a cyclic runner that sleeps and wakes like Agent Colony. On a schedule it measures the current knobs against the claim map on a measurement set, proposes one safe mutation from a closed set, re-measures, and keeps the change only when the trial window is strictly better *and* a frozen twin control does not lead *and* the Oracle does not kill. Optional hold-out companies are reserved for accept-time validation. Fitness alone never decides. Human authorize remains required for durable accepts, new claims, or permanent rule changes. The independent verifier stays outside the mutation set.
 
 This is not AGI. It is not novel theorem discovery. It is a measured, evidence-gated way for a claim map to improve its own allocation and judgment surfaces while remaining auditable.
 
@@ -50,7 +50,7 @@ Any agent (or human) can stand this up. The production loop lives in `.github/wo
 Each wake (failure **noisy**, success **quiet**):
 
 1. Hard benches (verifier / tests; fail the job if critical)
-2. Evolve N cycles: measure claim map on seed set → propose one closed-set knob → trial → twin control → Oracle kill check → keep only if trial better *and* twin does not lead *and* Oracle does not kill
+2. Evolve N cycles: measure claim map on measurement set → propose one closed-set knob → trial → twin control → Oracle kill check → optional hold-out check → keep only if trial better *and* twin does not lead *and* Oracle does not kill
 3. Slim receipts (`society/LEARNING.md`, `data/evolve_state.json`, `society/EVOLVE_STATUS.md`)
 4. Push deltas only
 
@@ -61,8 +61,8 @@ Authorize is never automatic. Durable accepts stay candidate until human authori
 python -m colony.evolve --cycles 3
 python -m colony.evolve --status
 
-# optional gated live attempt (fails closed to fixtures)
-python -m colony.evolve --cycles 1 --live --offline false
+# with hold-out accept check
+python -m colony.evolve --cycles 1 --holdout
 ```
 
 ---
@@ -91,16 +91,17 @@ These rules are load-bearing. Mutations cannot rewrite them.
 
 ```
 bench     hard checks + verifier
-measure   current knobs on a fixed seed set (claim map)
+measure   current knobs on measurement set (claim map)
 propose   one closed-set mutation (escalation cap, single-source penalty, priority boost, gap boost)
 trial     re-measure under the mutation
 twin      frozen control arm, no mutation
 oracle    kill if coverage drops, false-positive rises, residual risk hidden, or cost explodes
+holdout   optional reserved companies scored at accept time
 keep      only if trial > baseline AND twin does not lead AND oracle does not kill
 witness   append-only record of keep / revert / void
 ```
 
-Knobs live in `colony/knobs.py`. Measurement is `colony/measure.py` (richer seed with gaps + disagreement; gated live stub fails closed). Verifier is `colony/verifier.py` (sha256, fails closed). Oracle is `colony/oracle.py`. The evolve driver is `colony/evolve.py`. Outcomes accumulate in `data/evolve_state.json` and are summarized in `society/LEARNING.md`. Cross-surface notes in `society/LESSONS.md`.
+Knobs live in `colony/knobs.py`. Measurement is `colony/measure.py` (measurement set + held-out accept set; gated live stub fails closed). Verifier is `colony/verifier.py` (sha256, fails closed). Oracle is `colony/oracle.py`. The evolve driver is `colony/evolve.py`. Outcomes accumulate in `data/evolve_state.json` and are summarized in `society/LEARNING.md`. Cross-surface notes in `society/LESSONS.md`.
 
 A keep is a candidate until human authorize. Standing trust may selectively accept machine-checked keeps that improve coverage or residual risk without raising false-positive rate. Never accept-all.
 
@@ -118,24 +119,24 @@ pip install -e .
 python -m colony.evolve --cycles 2
 python -m colony.evolve --status
 
-# verifier fails closed
-python -m pytest tests/test_verifier.py -q
+# tests cover verifier, measure, oracle, knobs, and evolve
+python -m pytest tests -q
 ```
 
-Offline by default. Gated live path is optional and fails closed to fixtures if unavailable.
+Offline by default. Hold-out companies are reserved for accept-time validation. Gated live path is optional and fails closed to fixtures if unavailable.
 
 ---
 
 ## Layout
 
 ```
-colony/intents.py                claim registry (Athar geometry) + richer seed
+colony/intents.py                claim registry (Athar geometry) + measurement / hold-out split
 colony/cluster.py                cluster map (settled / contested / single / blind / dead)
-colony/measure.py                seed-set measurement (offline + gated live stub)
+colony/measure.py                seed-set measurement (offline + gated live stub + holdout)
 colony/verifier.py               independent sha256 gate (fails closed)
 colony/oracle.py                 machine-checkable kill rules
 colony/knobs.py                  closed set of safe mutable parameters
-colony/evolve.py                 sleep/awake cycle driver, twin + Oracle, keep/revert
+colony/evolve.py                 sleep/awake cycle driver, twin + Oracle + optional holdout, keep/revert
 colony/__init__.py
 CHARTER.md                       hard ceiling
 society/LEARNING.md              recursive outcomes surface
@@ -144,7 +145,7 @@ society/EVOLVE_STATUS.md         slim receipt from runner
 data/evolve_state.json           append-only state
 .github/workflows/atharium-evolve.yml   scheduled runner
 docs/                           banner and future surfaces
-tests/                           verifier fails-closed tests
+tests/                           verifier, measure, oracle, knobs, evolve
 ```
 
 ---
@@ -163,7 +164,7 @@ Everything else is free for emergence under measurement.
 
 ## Status
 
-Operational. Sleep/awake runner is scheduled. Recursive learning loop measures the claim map on a richer seed set (gaps + disagreement), proposes closed-set mutations (including gap escalation boost), and records keeps and reverts under twin control + calibrated Oracle. Independent verifier recomputes sha256 and fails closed on tamper. Gated live scout path is stubbed and fails closed to fixtures. Cross-surface notes in society/LESSONS.md. Not AGI. Not a production credit system. A measured hybrid that any agent can wake.
+Operational. Sleep/awake runner is scheduled. Recursive learning loop measures the claim map on a measurement set (with held-out companies reserved for accept-time validation), proposes closed-set mutations, and records keeps and reverts under twin control + Oracle. Independent verifier recomputes sha256 and fails closed on tamper. Tests cover the mutable surfaces. Gated live scout path is stubbed and fails closed to fixtures. Cross-surface notes in society/LESSONS.md. Not AGI. Not a production credit system. A measured hybrid that any agent can wake.
 
 ---
 
