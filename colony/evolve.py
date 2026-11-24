@@ -1,8 +1,9 @@
 """Atharium evolve — recursive learning under twin control.
 
-Sleep/awake cycle entry point. Measures current knobs, proposes one closed-set
-mutation, re-measures, keeps only when trial is strictly better and twin does
-not lead. Outcomes are append-only. Verifier stays outside the mutation set.
+Sleep/awake cycle entry point. Measures current knobs against the claim map
+on a fixed seed set, proposes one closed-set mutation, re-measures, keeps only
+when trial is strictly better and twin does not lead. Outcomes are append-only.
+Verifier stays outside the mutation set.
 
 Not AGI. Human authorize still required for durable accepts.
 """
@@ -15,7 +16,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .knobs import KNOBS, as_dict, get_knob
+from .knobs import KNOBS, as_dict
+from .measure import measure
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -28,23 +30,11 @@ def _ensure() -> None:
 
 
 def run_seed(overrides: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Stub measurement. Replace with real queen runs on a fixed seed set + verifier."""
-    knobs = as_dict(overrides)
-    # Deterministic stub that still responds to knobs so the loop can be exercised.
-    esc = knobs.get("escalation_max_claims", 2)
-    pen = knobs.get("single_source_penalty", 1)
-    coverage = min(1.0, 0.7 + 0.05 * esc - 0.02 * pen)
-    cost = 0.06 + 0.01 * esc
-    fp = max(0.0, 0.02 - 0.005 * pen)
-    return {
-        "knobs": knobs,
-        "load_bearing_coverage": round(coverage, 4),
-        "residual_risk_visible": True,
-        "cost_usd": round(cost, 4),
-        "false_positive_rate": round(fp, 4),
-        "verifier_ok": True,
-        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    }
+    """Real seed-set measurement against the claim map."""
+    m = measure(overrides)
+    m["knobs"] = as_dict(overrides)
+    m["timestamp"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return m
 
 
 def propose(current: dict[str, Any]) -> tuple[str, Any] | None:
@@ -61,7 +51,6 @@ def propose(current: dict[str, Any]) -> tuple[str, Any] | None:
 def better(trial: dict[str, Any], baseline: dict[str, Any]) -> bool:
     if not trial.get("verifier_ok") or not baseline.get("verifier_ok"):
         return False
-    # Prefer higher coverage at equal or lower cost, or lower false-positive with no coverage loss.
     if trial["load_bearing_coverage"] > baseline["load_bearing_coverage"] and trial["cost_usd"] <= baseline["cost_usd"] + 0.001:
         return True
     if trial["false_positive_rate"] < baseline["false_positive_rate"] and trial["load_bearing_coverage"] >= baseline["load_bearing_coverage"] - 0.001:
@@ -111,7 +100,7 @@ def write_learning(state: dict[str, Any]) -> None:
     lines = [
         "# Atharium learning loop",
         "",
-        "Recursive: each cycle proposes one closed-set mutation, measures, and keeps only when trial beats baseline *and* twin control does not lead.",
+        "Recursive: each cycle proposes one closed-set mutation, measures against the claim map on a fixed seed set, and keeps only when trial beats baseline *and* twin control does not lead.",
         "",
         f"- Outcomes recorded: **{len(outcomes)}**",
         f"- Kept: **{keeps}**",
