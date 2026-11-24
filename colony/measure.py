@@ -22,11 +22,12 @@ def _fixture_facts(company: str, overrides: dict[str, Any] | None) -> list[Fact]
     knobs = as_dict(overrides)
     esc = int(knobs.get("escalation_max_claims", 2))
     gap_boost = int(knobs.get("gap_escalation_boost", 0))
+    original_esc = esc  # preserve for gap decision before any decrement
     facts: list[Fact] = []
     for claim in CLAIMS:
         if company.startswith("Gap") and claim.id == "registry":
-            # load-bearing gap that closes when escalation is high enough
-            if esc + gap_boost >= 3:
+            # load-bearing gap that closes when original escalation is high enough
+            if original_esc + gap_boost >= 3:
                 facts.append(Fact(claim.id, {"active": True, "legal_name": company}))
             else:
                 facts.append(Fact(claim.id, {}, ok=False, empty=True))
