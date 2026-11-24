@@ -1,6 +1,6 @@
 <div align="center">
 
-![Atharium](docs/atharium-banner.jpg)
+![Atharium](docs/atharium-banner.svg)
 
 # Atharium
 
