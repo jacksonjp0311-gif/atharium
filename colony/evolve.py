@@ -53,7 +53,8 @@ def propose(current: dict[str, Any]) -> tuple[str, Any] | None:
 def better(trial: dict[str, Any], baseline: dict[str, Any]) -> bool:
     if not trial.get("verifier_ok") or not baseline.get("verifier_ok"):
         return False
-    if trial["load_bearing_coverage"] > baseline["load_bearing_coverage"] and trial["cost_usd"] <= baseline["cost_usd"] + 0.001:
+    # allow a small cost increase when coverage strictly improves
+    if trial["load_bearing_coverage"] > baseline["load_bearing_coverage"] and trial["cost_usd"] <= baseline["cost_usd"] + 0.05:
         return True
     if trial["false_positive_rate"] < baseline["false_positive_rate"] and trial["load_bearing_coverage"] >= baseline["load_bearing_coverage"] - 0.001:
         return True
