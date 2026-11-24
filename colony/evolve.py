@@ -30,9 +30,9 @@ def _ensure() -> None:
         p.mkdir(parents=True, exist_ok=True)
 
 
-def run_seed(overrides: dict[str, Any] | None = None) -> dict[str, Any]:
+def run_seed(overrides: dict[str, Any] | None = None, live: bool = False) -> dict[str, Any]:
     """Real seed-set measurement against the claim map."""
-    m = measure(overrides)
+    m = measure(overrides, live=live)
     m["knobs"] = as_dict(overrides)
     m["timestamp"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     return m
@@ -40,7 +40,7 @@ def run_seed(overrides: dict[str, Any] | None = None) -> dict[str, Any]:
 
 def propose(current: dict[str, Any]) -> tuple[str, Any] | None:
     """Closed-set proposal. Cycles through safe knobs."""
-    order = ["escalation_max_claims", "single_source_penalty", "coverage_priority_boost"]
+    order = ["escalation_max_claims", "single_source_penalty", "coverage_priority_boost", "gap_escalation_boost"]
     for name in order:
         knob = KNOBS[name]
         val = current.get(name, knob.default)
@@ -59,8 +59,8 @@ def better(trial: dict[str, Any], baseline: dict[str, Any]) -> bool:
     return False
 
 
-def evolve_once(state: dict[str, Any]) -> dict[str, Any]:
-    baseline = run_seed(state.get("overrides"))
+def evolve_once(state: dict[str, Any], live: bool = False) -> dict[str, Any]:
+    baseline = run_seed(state.get("overrides"), live=live)
     proposal = propose(baseline["knobs"])
     if not proposal:
         state.setdefault("outcomes", []).append({"result": "no_proposal", "ts": baseline["timestamp"]})
@@ -69,8 +69,8 @@ def evolve_once(state: dict[str, Any]) -> dict[str, Any]:
     name, new_val = proposal
     trial_ov = dict(state.get("overrides") or {})
     trial_ov[name] = new_val
-    trial = run_seed(trial_ov)
-    control = run_seed({})  # twin: frozen defaults
+    trial = run_seed(trial_ov, live=live)
+    control = run_seed({}, live=live)  # twin: frozen defaults
 
     kill = oracle_kill(trial, baseline)
     kept = better(trial, baseline) and not better(control, trial) and kill is None
@@ -86,6 +86,7 @@ def evolve_once(state: dict[str, Any]) -> dict[str, Any]:
         "control_coverage": control["load_bearing_coverage"],
         "baseline_fp": baseline["false_positive_rate"],
         "trial_fp": trial["false_positive_rate"],
+        "used_live": baseline.get("used_live"),
     }
     state.setdefault("outcomes", []).append(outcome)
     if kept:
@@ -129,6 +130,7 @@ def main() -> None:
     p = argparse.ArgumentParser(description="Atharium evolve — sleep/awake recursive learning")
     p.add_argument("--cycles", type=int, default=1)
     p.add_argument("--offline", default="true")
+    p.add_argument("--live", action="store_true", help="Attempt gated live path (fails closed)")
     p.add_argument("--status", action="store_true")
     args = p.parse_args()
 
@@ -145,13 +147,15 @@ def main() -> None:
         }, indent=2))
         return
 
+    live = args.live and args.offline.lower() != "true"
     for _ in range(max(1, args.cycles)):
-        state = evolve_once(state)
+        state = evolve_once(state, live=live)
 
     path.write_text(json.dumps(state, indent=2))
     write_learning(state)
     print(json.dumps({
         "cycles": args.cycles,
+        "live": live,
         "overrides": state.get("overrides"),
         "outcomes": len(state.get("outcomes", [])),
         "keeps": len(state.get("keeps", [])),
