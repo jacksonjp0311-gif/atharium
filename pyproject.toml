@@ -1,0 +1,9 @@
+[project]
+name = "atharium"
+version = "0.1.0"
+description = "Claim map under measurement. Athar geometry + evolving runner."
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["colony*"]
