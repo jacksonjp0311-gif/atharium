@@ -17,6 +17,7 @@ def test_measure_holdout():
 
 def test_measure_responds_to_knob():
     base = measure()
-    boosted = measure({"escalation_max_claims": 4})
-    # coverage or cost should be able to differ; at minimum the call succeeds
+    boosted = measure({"escalation_max_claims": 3})
+    # higher escalation closes the Gap Co registry gap, raising coverage
+    assert boosted["load_bearing_coverage"] > base["load_bearing_coverage"]
     assert boosted["verifier_ok"]
