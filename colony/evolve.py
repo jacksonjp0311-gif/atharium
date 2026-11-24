@@ -1,8 +1,9 @@
 """Atharium evolve — recursive learning under twin control + Oracle.
 
 Sleep/awake cycle entry point. Measures current knobs against the claim map
-on a fixed seed set, proposes one closed-set mutation, re-measures, keeps only
+on a fixed measurement set, proposes one closed-set mutation, re-measures, keeps only
 when trial is strictly better, twin does not lead, and Oracle does not kill.
+Optional hold-out check scores the reserved companies at accept time.
 Outcomes are append-only. Verifier stays outside the mutation set.
 
 Not AGI. Human authorize still required for durable accepts.
@@ -30,9 +31,9 @@ def _ensure() -> None:
         p.mkdir(parents=True, exist_ok=True)
 
 
-def run_seed(overrides: dict[str, Any] | None = None, live: bool = False) -> dict[str, Any]:
+def run_seed(overrides: dict[str, Any] | None = None, live: bool = False, holdout: bool = False) -> dict[str, Any]:
     """Real seed-set measurement against the claim map."""
-    m = measure(overrides, live=live)
+    m = measure(overrides, live=live, holdout=holdout)
     m["knobs"] = as_dict(overrides)
     m["timestamp"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     return m
@@ -59,7 +60,7 @@ def better(trial: dict[str, Any], baseline: dict[str, Any]) -> bool:
     return False
 
 
-def evolve_once(state: dict[str, Any], live: bool = False) -> dict[str, Any]:
+def evolve_once(state: dict[str, Any], live: bool = False, check_holdout: bool = False) -> dict[str, Any]:
     baseline = run_seed(state.get("overrides"), live=live)
     proposal = propose(baseline["knobs"])
     if not proposal:
@@ -74,6 +75,16 @@ def evolve_once(state: dict[str, Any], live: bool = False) -> dict[str, Any]:
 
     kill = oracle_kill(trial, baseline)
     kept = better(trial, baseline) and not better(control, trial) and kill is None
+
+    holdout_ok = True
+    if check_holdout and kept:
+        holdout_trial = run_seed(trial_ov, live=live, holdout=True)
+        holdout_base = run_seed(state.get("overrides"), live=live, holdout=True)
+        holdout_ok = better(holdout_trial, holdout_base) or holdout_trial["load_bearing_coverage"] >= holdout_base["load_bearing_coverage"] - 0.001
+        if not holdout_ok:
+            kept = False
+            kill = kill or "holdout_regressed"
+
     outcome = {
         "ts": baseline["timestamp"],
         "knob": name,
@@ -87,6 +98,7 @@ def evolve_once(state: dict[str, Any], live: bool = False) -> dict[str, Any]:
         "baseline_fp": baseline["false_positive_rate"],
         "trial_fp": trial["false_positive_rate"],
         "used_live": baseline.get("used_live"),
+        "holdout_checked": check_holdout,
     }
     state.setdefault("outcomes", []).append(outcome)
     if kept:
@@ -104,7 +116,7 @@ def write_learning(state: dict[str, Any]) -> None:
     lines = [
         "# Atharium learning loop",
         "",
-        "Recursive: each cycle proposes one closed-set mutation, measures against the claim map on a fixed seed set, and keeps only when trial beats baseline *and* twin control does not lead *and* Oracle does not kill.",
+        "Recursive: each cycle proposes one closed-set mutation, measures against the claim map on the measurement set, and keeps only when trial beats baseline *and* twin control does not lead *and* Oracle does not kill. Optional hold-out check at accept time.",
         "",
         f"- Outcomes recorded: **{len(outcomes)}**",
         f"- Kept: **{keeps}**",
@@ -131,6 +143,7 @@ def main() -> None:
     p.add_argument("--cycles", type=int, default=1)
     p.add_argument("--offline", default="true")
     p.add_argument("--live", action="store_true", help="Attempt gated live path (fails closed)")
+    p.add_argument("--holdout", action="store_true", help="Check held-out companies at accept time")
     p.add_argument("--status", action="store_true")
     args = p.parse_args()
 
@@ -149,13 +162,14 @@ def main() -> None:
 
     live = args.live and args.offline.lower() != "true"
     for _ in range(max(1, args.cycles)):
-        state = evolve_once(state, live=live)
+        state = evolve_once(state, live=live, check_holdout=args.holdout)
 
     path.write_text(json.dumps(state, indent=2))
     write_learning(state)
     print(json.dumps({
         "cycles": args.cycles,
         "live": live,
+        "holdout": args.holdout,
         "overrides": state.get("overrides"),
         "outcomes": len(state.get("outcomes", [])),
         "keeps": len(state.get("keeps", [])),
