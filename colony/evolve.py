@@ -1,9 +1,9 @@
-"""Atharium evolve — recursive learning under twin control.
+"""Atharium evolve — recursive learning under twin control + Oracle.
 
 Sleep/awake cycle entry point. Measures current knobs against the claim map
 on a fixed seed set, proposes one closed-set mutation, re-measures, keeps only
-when trial is strictly better and twin does not lead. Outcomes are append-only.
-Verifier stays outside the mutation set.
+when trial is strictly better, twin does not lead, and Oracle does not kill.
+Outcomes are append-only. Verifier stays outside the mutation set.
 
 Not AGI. Human authorize still required for durable accepts.
 """
@@ -18,6 +18,7 @@ from typing import Any
 
 from .knobs import KNOBS, as_dict
 from .measure import measure
+from .oracle import oracle_kill
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -71,13 +72,15 @@ def evolve_once(state: dict[str, Any]) -> dict[str, Any]:
     trial = run_seed(trial_ov)
     control = run_seed({})  # twin: frozen defaults
 
-    kept = better(trial, baseline) and not better(control, trial)
+    kill = oracle_kill(trial, baseline)
+    kept = better(trial, baseline) and not better(control, trial) and kill is None
     outcome = {
         "ts": baseline["timestamp"],
         "knob": name,
         "from": baseline["knobs"].get(name),
         "to": new_val,
         "kept": kept,
+        "oracle_kill": kill,
         "baseline_coverage": baseline["load_bearing_coverage"],
         "trial_coverage": trial["load_bearing_coverage"],
         "control_coverage": control["load_bearing_coverage"],
@@ -100,7 +103,7 @@ def write_learning(state: dict[str, Any]) -> None:
     lines = [
         "# Atharium learning loop",
         "",
-        "Recursive: each cycle proposes one closed-set mutation, measures against the claim map on a fixed seed set, and keeps only when trial beats baseline *and* twin control does not lead.",
+        "Recursive: each cycle proposes one closed-set mutation, measures against the claim map on a fixed seed set, and keeps only when trial beats baseline *and* twin control does not lead *and* Oracle does not kill.",
         "",
         f"- Outcomes recorded: **{len(outcomes)}**",
         f"- Kept: **{keeps}**",
@@ -115,7 +118,8 @@ def write_learning(state: dict[str, Any]) -> None:
     for o in outcomes[-8:]:
         if "knob" in o:
             status = "kept" if o.get("kept") else "reverted"
-            lines.append(f"- `{status}` · `{o['knob']}` {o.get('from')} → {o.get('to')} · cov {o.get('baseline_coverage')} → {o.get('trial_coverage')}")
+            kill = f" oracle:{o.get('oracle_kill')}" if o.get("oracle_kill") else ""
+            lines.append(f"- `{status}` · `{o['knob']}` {o.get('from')} → {o.get('to')} · cov {o.get('baseline_coverage')} → {o.get('trial_coverage')}{kill}")
         else:
             lines.append(f"- {o.get('result')}")
     (SOCIETY / "LEARNING.md").write_text("\n".join(lines) + "\n")
