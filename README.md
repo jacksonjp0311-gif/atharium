@@ -1,26 +1,12 @@
 # Atharium
 
-**An evolving runner built on Athar's claim-map swarm.**
+**Frankenstein baby.**
 
-Forked from [atharhive/colony](https://github.com/atharhive/colony) and turned into a cyclic system that can improve its own surfaces under measurement.
+Athar's claim-map swarm (queen reads only the map, coverage-first, no averaging, HOLD on missing load-bearing, independent receipt verifier) stitched to an evolving runner under hard ceiling.
 
-The original geometry stays load-bearing:
-- Seven claims, each mapped to one intent
-- Queen reads only the cluster map (settled / contested / single / blind / dead)
-- Coverage first, escalation only where it pays
-- No averaging. Disagreement is shown.
-- HOLD when a load-bearing claim cannot be bought
-- Independent bundle + sha256 verifier that never imports producer code
+The original geometry stays load-bearing. The new loop can propose safe knob mutations, measure them against a twin control, and keep only what is strictly better. Human authorize remains required for durable accepts.
 
-What Atharium adds:
-- Scheduled evolve cycles
-- Closed set of safe knobs
-- Twin control: treatment may mutate, control is frozen
-- Keep only when the trial window is strictly better *and* the twin does not lead
-- Hard ceiling: tribute, human authorize for durable accepts, append-only witness
-- Oracle that can kill weak keeps
-
-Not AGI. Not novel theorem discovery. The verifier stays outside the mutation set.
+Not AGI. Not a replacement for the original. A governed hybrid.
 
 ## Quick start
 
@@ -31,11 +17,11 @@ python -m colony.evolve --cycles 2
 python -m colony.evolve --status
 ```
 
-## Relation to other work
+## Lineage
 
-- Original commercial swarm: https://github.com/atharhive/colony
-- Governed agent society this runner draws from: https://github.com/jacksonjp0311-gif/agent-colony
+- Original: https://github.com/atharhive/colony
+- Geometry this draws from: https://github.com/jacksonjp0311-gif/agent-colony
 
-See [CHARTER.md](CHARTER.md) for the hard ceiling.
+See [CHARTER.md](CHARTER.md).
 
 MIT. Original by Athar. Evolving runner by James Paul Jackson.
