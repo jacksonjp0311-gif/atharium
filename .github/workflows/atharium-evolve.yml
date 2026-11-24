@@ -1,0 +1,26 @@
+name: Atharium evolve
+
+on:
+  schedule:
+    - cron: '26 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      cycles:
+        default: '3'
+
+jobs:
+  evolve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m colony.evolve --cycles "${{ github.event.inputs.cycles || '3' }}" || true
+      - name: commit deltas
+        run: |
+          git config user.name "atharium-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add data/ society/ || true
+          git diff --staged --quiet || git commit -m "evolve: slim deltas [skip ci]"
+          git push || true
