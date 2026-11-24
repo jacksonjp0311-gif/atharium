@@ -20,7 +20,7 @@ Atharium is a Frankenstein baby with a hard ceiling.
 
 It keeps the geometry that made Athar's Colony honest: a question is decomposed into fixed claims, scouts return facts not opinions, the queen reads only the cluster map, disagreement is shown rather than averaged, and a missing load-bearing claim returns HOLD. Every fact carries a receipt. An independent verifier recomputes the bundle hash and fails closed on tamper. That surface is load-bearing. It is not free for silent change.
 
-On top of that geometry sits a cyclic runner that sleeps and wakes like Agent Colony. On a schedule it measures the current knobs, proposes one safe mutation from a closed set, re-measures, and keeps the change only when the trial window is strictly better *and* a frozen twin control does not lead. Fitness alone never decides. Human authorize remains required for durable accepts, new claims, or permanent rule changes. The independent verifier stays outside the mutation set.
+On top of that geometry sits a cyclic runner that sleeps and wakes like Agent Colony. On a schedule it measures the current knobs against the claim map on a fixed seed set, proposes one safe mutation from a closed set, re-measures, and keeps the change only when the trial window is strictly better *and* a frozen twin control does not lead. Fitness alone never decides. Human authorize remains required for durable accepts, new claims, or permanent rule changes. The independent verifier stays outside the mutation set.
 
 This is not AGI. It is not novel theorem discovery. It is a measured, evidence-gated way for a claim map to improve its own allocation and judgment surfaces while remaining auditable.
 
@@ -50,7 +50,7 @@ Any agent (or human) can stand this up. The production loop lives in `.github/wo
 Each wake (failure **noisy**, success **quiet**):
 
 1. Hard benches (verifier / tests; fail the job if critical)
-2. Evolve N cycles: measure → propose one closed-set knob → trial → twin control → keep only if trial better *and* twin does not lead
+2. Evolve N cycles: measure claim map on seed set → propose one closed-set knob → trial → twin control → keep only if trial better *and* twin does not lead
 3. Slim receipts (`society/LEARNING.md`, `data/evolve_state.json`, `society/EVOLVE_STATUS.md`)
 4. Push deltas only
 
@@ -88,7 +88,7 @@ These rules are load-bearing. Mutations cannot rewrite them.
 
 ```
 bench     hard checks + verifier
-measure   current knobs on a fixed seed set
+measure   current knobs on a fixed seed set (claim map)
 propose   one closed-set mutation (escalation cap, single-source penalty, priority boost)
 trial     re-measure under the mutation
 twin      frozen control arm, no mutation
@@ -96,7 +96,7 @@ keep      only if trial > baseline AND twin does not lead
 witness   append-only record of keep / revert / void
 ```
 
-Knobs live in `colony/knobs.py`. The evolve driver is `colony/evolve.py`. Outcomes accumulate in `data/evolve_state.json` and are summarized in `society/LEARNING.md`.
+Knobs live in `colony/knobs.py`. Measurement is `colony/measure.py` (seed companies + cluster map). The evolve driver is `colony/evolve.py`. Outcomes accumulate in `data/evolve_state.json` and are summarized in `society/LEARNING.md`.
 
 A keep is a candidate until human authorize. Standing trust may selectively accept machine-checked keeps that improve coverage or residual risk without raising false-positive rate. Never accept-all.
 
@@ -110,18 +110,21 @@ cd atharium
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e .
 
-# run the evolve skeleton (same entry the runner uses)
+# run the evolve loop (same entry the runner uses)
 python -m colony.evolve --cycles 2
 python -m colony.evolve --status
 ```
 
-Offline, no wallet, no network required for the evolve skeleton. Real queen seed-set measurement against Athar's cluster map is the next wiring step.
+Offline, no wallet, no network required. Measurement runs against the claim map on a fixed seed set of companies.
 
 ---
 
 ## Layout
 
 ```
+colony/intents.py                claim registry (Athar geometry)
+colony/cluster.py                cluster map (settled / contested / single / blind / dead)
+colony/measure.py                seed-set measurement for keep/revert
 colony/knobs.py                  closed set of safe mutable parameters
 colony/evolve.py                 sleep/awake cycle driver, twin comparison, keep/revert
 colony/__init__.py
@@ -149,7 +152,7 @@ Everything else is free for emergence under measurement.
 
 ## Status
 
-Operational skeleton. Sleep/awake runner is scheduled. Recursive learning loop records keeps and reverts under twin control. Real measurement against Athar's queen/cluster surfaces (seed counterparties, actual maps, verifier gate) is the next mile. Not AGI. Not a production credit system. A measured hybrid that any agent can wake.
+Operational. Sleep/awake runner is scheduled. Recursive learning loop measures the claim map on a fixed seed set, proposes closed-set mutations, and records keeps and reverts under twin control. Real Telegraph live scouts are optional and gated; the offline path is complete. Not AGI. Not a production credit system. A measured hybrid that any agent can wake.
 
 ---
 
