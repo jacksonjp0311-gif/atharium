@@ -20,7 +20,7 @@ Atharium is a Frankenstein baby with a hard ceiling.
 
 It keeps the geometry that made Athar's Colony honest: a question is decomposed into fixed claims, scouts return facts not opinions, the queen reads only the cluster map, disagreement is shown rather than averaged, and a missing load-bearing claim returns HOLD. Every fact carries a receipt. An independent verifier recomputes the bundle hash and fails closed on tamper. That surface is load-bearing. It is not free for silent change.
 
-On top of that geometry sits a cyclic runner. On a schedule it measures the current knobs, proposes one safe mutation from a closed set, re-measures, and keeps the change only when the trial window is strictly better *and* a frozen twin control does not lead. Fitness alone never decides. Human authorize remains required for durable accepts, new claims, or permanent rule changes. The independent verifier stays outside the mutation set.
+On top of that geometry sits a cyclic runner that sleeps and wakes like Agent Colony. On a schedule it measures the current knobs, proposes one safe mutation from a closed set, re-measures, and keeps the change only when the trial window is strictly better *and* a frozen twin control does not lead. Fitness alone never decides. Human authorize remains required for durable accepts, new claims, or permanent rule changes. The independent verifier stays outside the mutation set.
 
 This is not AGI. It is not novel theorem discovery. It is a measured, evidence-gated way for a claim map to improve its own allocation and judgment surfaces while remaining auditable.
 
@@ -31,10 +31,36 @@ This is not AGI. It is not novel theorem discovery. It is a measured, evidence-g
 | Source | What it contributed | Link |
 |--------|---------------------|------|
 | **Athar's Colony** | Claim registry, cluster map (settled / contested / single / blind / dead), coverage-first allocator, queen that never reads raw answers, independent bundle + sha256 verifier, HOLD on missing load-bearing, no averaging | [atharhive/colony](https://github.com/atharhive/colony) |
-| **Agent Colony** | Hard ceiling (tribute, human authorize, append-only witness), twin control arm, keep/revert under measurement, closed-set knobs, scheduled evolve cycles, recommend-only promotion | [jacksonjp0311-gif/agent-colony](https://github.com/jacksonjp0311-gif/agent-colony) |
+| **Agent Colony** | Hard ceiling (tribute, human authorize, append-only witness), twin control arm, keep/revert under measurement, closed-set knobs, scheduled sleep/awake evolve cycles, recommend-only promotion, slim receipts | [jacksonjp0311-gif/agent-colony](https://github.com/jacksonjp0311-gif/agent-colony) |
 | **Atharium** | The hybrid. Original surfaces preserved. Evolve loop added under the same ceiling. | This repository |
 
 Original commercial swarm by [Athar](https://github.com/atharhive). Evolving runner and hard ceiling by [James Paul Jackson](https://github.com/jacksonjp0311-gif).
+
+---
+
+## Sleep / awake cycle
+
+Any agent (or human) can stand this up. The production loop lives in `.github/workflows/atharium-evolve.yml`.
+
+| Trigger | When |
+|---------|------|
+| `schedule` | `26 */6 * * *` UTC — every 6 hours |
+| `workflow_dispatch` | Manual (Actions → Atharium evolve → Run) |
+
+Each wake (failure **noisy**, success **quiet**):
+
+1. Hard benches (verifier / tests; fail the job if critical)
+2. Evolve N cycles: measure → propose one closed-set knob → trial → twin control → keep only if trial better *and* twin does not lead
+3. Slim receipts (`society/LEARNING.md`, `data/evolve_state.json`, `society/EVOLVE_STATUS.md`)
+4. Push deltas only
+
+Authorize is never automatic. Durable accepts stay candidate until human authorize. The independent verifier is outside the mutation set.
+
+```bash
+# local wake (same code the runner uses)
+python -m colony.evolve --cycles 3
+python -m colony.evolve --status
+```
 
 ---
 
@@ -70,7 +96,7 @@ keep      only if trial > baseline AND twin does not lead
 witness   append-only record of keep / revert / void
 ```
 
-Knobs live in `colony/knobs.py`. The evolve driver is `colony/evolve.py`. Scheduled via `.github/workflows/atharium-evolve.yml`.
+Knobs live in `colony/knobs.py`. The evolve driver is `colony/evolve.py`. Outcomes accumulate in `data/evolve_state.json` and are summarized in `society/LEARNING.md`.
 
 A keep is a candidate until human authorize. Standing trust may selectively accept machine-checked keeps that improve coverage or residual risk without raising false-positive rate. Never accept-all.
 
@@ -84,26 +110,27 @@ cd atharium
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e .
 
-# run the evolve skeleton
+# run the evolve skeleton (same entry the runner uses)
 python -m colony.evolve --cycles 2
 python -m colony.evolve --status
 ```
 
-Offline, no wallet, no network required for the evolve skeleton. Real queen seed-set measurement is the next wiring step.
+Offline, no wallet, no network required for the evolve skeleton. Real queen seed-set measurement against Athar's cluster map is the next wiring step.
 
 ---
 
 ## Layout
 
 ```
-colony/knobs.py          closed set of safe mutable parameters
-colony/evolve.py         cycle driver, twin comparison, keep/revert
+colony/knobs.py                  closed set of safe mutable parameters
+colony/evolve.py                 sleep/awake cycle driver, twin comparison, keep/revert
 colony/__init__.py
-CHARTER.md               hard ceiling
-society/LEARNING.md      outcomes surface
-data/                    evolve state (gitignored or slim-committed)
-.github/workflows/       scheduled runner
-docs/                    banner and future surfaces
+CHARTER.md                       hard ceiling
+society/LEARNING.md              recursive outcomes surface
+society/EVOLVE_STATUS.md         slim receipt from runner
+data/evolve_state.json           append-only state
+.github/workflows/atharium-evolve.yml   scheduled runner
+docs/                           banner and future surfaces
 ```
 
 ---
@@ -122,7 +149,7 @@ Everything else is free for emergence under measurement.
 
 ## Status
 
-Skeleton is live. Evolve runner, knobs, twin stub, workflow, and CHARTER are in place. Real measurement against Athar's queen/cluster surfaces (seed counterparties, actual maps, verifier gate) is the next mile. Not AGI. Not a production credit system. A measured hybrid.
+Operational skeleton. Sleep/awake runner is scheduled. Recursive learning loop records keeps and reverts under twin control. Real measurement against Athar's queen/cluster surfaces (seed counterparties, actual maps, verifier gate) is the next mile. Not AGI. Not a production credit system. A measured hybrid that any agent can wake.
 
 ---
 
