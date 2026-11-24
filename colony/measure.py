@@ -2,7 +2,7 @@
 
 Runs the claim map on fixed companies using offline fixture facts.
 Scores load-bearing coverage, residual risk visibility, and false-positive proxy.
-Verifier gate is simulated as always-ok on fixtures (real verifier stays outside mutation).
+Verifier gate recomputes sha256 over the fixture bundle and fails closed on tamper.
 """
 
 from __future__ import annotations
@@ -10,6 +10,7 @@ from typing import Any
 from .intents import CLAIMS, SEED_COMPANIES, BY_ID
 from .cluster import Fact, cluster
 from .knobs import as_dict
+from .verifier import make_fixture_bundle, verify_bundle
 
 def _fixture_facts(company: str, overrides: dict[str, Any] | None) -> list[Fact]:
     """Deterministic offline facts. Knobs can influence how many scouts we simulate."""
@@ -52,11 +53,13 @@ def measure(overrides: dict[str, Any] | None = None) -> dict[str, Any]:
                 false_pos_proxy += 0.01
 
     coverage = settled_lb / max(1, total_lb * len(SEED_COMPANIES))
-    return {
+    metrics = {
         "load_bearing_coverage": round(coverage, 4),
         "residual_risk_visible": residual_visible,
         "cost_usd": round(cost, 4),
         "false_positive_rate": round(false_pos_proxy, 4),
-        "verifier_ok": True,
         "companies": len(SEED_COMPANIES),
     }
+    bundle = make_fixture_bundle(metrics)
+    metrics["verifier_ok"] = verify_bundle(bundle)
+    return metrics
