@@ -5,6 +5,7 @@ Optional live path is gated and fails closed if network/wallet unavailable.
 Verifier stays outside the mutation set.
 
 Measurement uses MEASURE_COMPANIES. HOLD_OUT_COMPANIES are reserved for accept-time check.
+Fixtures now respond to knobs: higher escalation can close a load-bearing gap.
 """
 
 from __future__ import annotations
@@ -15,14 +16,20 @@ from .knobs import as_dict
 from .verifier import make_fixture_bundle, verify_bundle
 
 def _fixture_facts(company: str, overrides: dict[str, Any] | None) -> list[Fact]:
-    """Deterministic offline facts with controlled gaps and disagreement."""
+    """Deterministic offline facts with controlled gaps and disagreement.
+    Higher escalation or gap boost can close the load-bearing registry gap on Gap Co.
+    """
     knobs = as_dict(overrides)
     esc = int(knobs.get("escalation_max_claims", 2))
+    gap_boost = int(knobs.get("gap_escalation_boost", 0))
     facts: list[Fact] = []
     for claim in CLAIMS:
         if company.startswith("Gap") and claim.id == "registry":
-            # load-bearing gap
-            facts.append(Fact(claim.id, {}, ok=False, empty=True))
+            # load-bearing gap that closes when escalation is high enough
+            if esc + gap_boost >= 3:
+                facts.append(Fact(claim.id, {"active": True, "legal_name": company}))
+            else:
+                facts.append(Fact(claim.id, {}, ok=False, empty=True))
             continue
         if company.startswith("Contested") and claim.id == "sanctions":
             facts.append(Fact(claim.id, {"matched": False}))
