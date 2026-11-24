@@ -3,11 +3,13 @@
 Runs the claim map on fixed companies. Default is offline fixtures.
 Optional live path is gated and fails closed if network/wallet unavailable.
 Verifier stays outside the mutation set.
+
+Measurement uses MEASURE_COMPANIES. HOLD_OUT_COMPANIES are reserved for accept-time check.
 """
 
 from __future__ import annotations
 from typing import Any
-from .intents import CLAIMS, SEED_COMPANIES, BY_ID
+from .intents import CLAIMS, MEASURE_COMPANIES, HOLD_OUT_COMPANIES, BY_ID
 from .cluster import Fact, cluster
 from .knobs import as_dict
 from .verifier import make_fixture_bundle, verify_bundle
@@ -44,8 +46,11 @@ def _live_facts(company: str, overrides: dict[str, Any] | None) -> list[Fact] | 
     # Stub: real Telegraph client would go here. Currently always unavailable.
     return None
 
-def measure(overrides: dict[str, Any] | None = None, live: bool = False) -> dict[str, Any]:
-    """Score the seed set. live=True attempts gated live path and fails closed."""
+def measure(overrides: dict[str, Any] | None = None, live: bool = False, holdout: bool = False) -> dict[str, Any]:
+    """Score the seed set. live=True attempts gated live path and fails closed.
+    holdout=True scores only the held-out companies (accept-time check).
+    """
+    companies = HOLD_OUT_COMPANIES if holdout else MEASURE_COMPANIES
     total_lb = sum(1 for c in CLAIMS if c.load_bearing)
     settled_lb = 0
     residual_visible = True
@@ -53,12 +58,11 @@ def measure(overrides: dict[str, Any] | None = None, live: bool = False) -> dict
     cost = 0.0
     used_live = False
 
-    for inp in SEED_COMPANIES:
+    for inp in companies:
         facts = None
         if live:
             facts = _live_facts(inp.company, overrides)
             if facts is None:
-                # fail closed: fall back to fixtures and mark
                 facts = _fixture_facts(inp.company, overrides)
             else:
                 used_live = True
@@ -76,14 +80,15 @@ def measure(overrides: dict[str, Any] | None = None, live: bool = False) -> dict
             if cl.state == "contested":
                 false_pos_proxy += 0.01
 
-    coverage = settled_lb / max(1, total_lb * len(SEED_COMPANIES))
+    coverage = settled_lb / max(1, total_lb * len(companies))
     metrics = {
         "load_bearing_coverage": round(coverage, 4),
         "residual_risk_visible": residual_visible,
         "cost_usd": round(cost, 4),
         "false_positive_rate": round(false_pos_proxy, 4),
-        "companies": len(SEED_COMPANIES),
+        "companies": len(companies),
         "used_live": used_live,
+        "holdout": holdout,
     }
     bundle = make_fixture_bundle(metrics)
     metrics["verifier_ok"] = verify_bundle(bundle)
