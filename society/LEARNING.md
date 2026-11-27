@@ -2,9 +2,9 @@
 
 Recursive: each cycle proposes one closed-set mutation, measures against the claim map on the measurement set, and keeps only when trial beats baseline *and* twin control does not lead *and* Oracle does not kill. Optional hold-out check at accept time.
 
-- Outcomes recorded: **23**
+- Outcomes recorded: **26**
 - Kept: **1**
-- Reverted: **22**
+- Reverted: **25**
 
 Fitness alone never decides. Verifier stays outside the mutation set. Human authorize still required for durable accepts.
 
